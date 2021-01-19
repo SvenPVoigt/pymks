@@ -1,8 +1,108 @@
 import requests
 import json
+from pydantic import BaseModel, Field, AnyHttpUrl, FilePath
 
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+def endpoint_url(host, endpoint):
+    return host.strip('/') + '/' + endpoint
+
+
+class CordraEngine(BaseModel):
+    secretkeylocation: FilePath
+    host: AnyHttpUrl
+    objects_endpoint: str = 'objects/'
+    acls_endpoint: str = 'acls/'
+    token_create_endpoint: str = 'auth/token'
+    token_read_endpoint = 'auth/introspect'
+    token_delete_endpoint = 'auth/revoke'
+    token_grant_type = 'password'
+    token_type = 'Bearer'
+
+
+    def __init__():
+        super().__init__()
+        self.authtoken = self.getauthtoken()
+
+
+    def emptysecretkey():
+        return "Save the following to secret key file\n\n%s"%json.dumps({"username": "", "password": ""}, indent=2)
+
+
+    def getauthtoken():
+        with open(secretkeylocation, 'r') as f:
+            secrets = json.loads(f)
+
+
+
+
+
+class Token:
+    def create(
+        host,
+        username,
+        password,
+        verify=None,
+        full=False
+    ):
+        '''Create an access Token'''
+
+        params = dict()
+        params['full'] = full
+
+        auth_json = dict()
+        auth_json['grant_type'] = token_grant_type
+        auth_json['username'] = username
+        auth_json['password'] = password
+
+        r = check_response(
+            requests.post(
+                endpoint_url(host, token_create_endpoint),
+                params=params,
+                data=auth_json,
+                verify=verify))
+        return r
+
+    def read(
+        host,
+        token,
+        verify=None,
+        full=False
+    ):
+        '''Read an access Token'''
+
+        params = dict()
+        params['full'] = full
+
+        auth_json = dict()
+        auth_json['token'] = get_token_value(token)
+
+        r = check_response(
+            requests.post(
+                endpoint_url(host, token_read_endpoint),
+                params=params,
+                data=auth_json,
+                verify=verify
+            ))
+        return r
+
+    def delete(
+        host,
+        token,
+        verify=None
+    ):
+        '''Delete an access Token'''
+
+        auth_json = dict()
+        auth_json['token'] = get_token_value(token)
+
+        r = check_response(
+            requests.post(
+                endpoint_url(host, token_delete_endpoint),
+                data=auth_json,
+                verify=verify
+            ))
+        return r
+
 
 # global variables
 objects_endpoint = 'objects/'
@@ -229,7 +329,7 @@ class Objects:
         acls=None
     ):
         '''Update a Cordra object'''
-    
+
         params = dict()
         if obj_type:
             params['type'] = obj_type
@@ -241,7 +341,7 @@ class Objects:
             params['jsonPointer'] = jsonPointer
         if payloadToDelete:
             params['payloadToDelete'] = payloadToDelete
-        
+
         if payloads:  # multi-part request
             if not obj_json:
                 raise Exception('obj_json is required when updating payload')
@@ -335,7 +435,7 @@ class Objects:
         if jsonFilter:
             params['filter'] = str(jsonFilter)
         if ids:
-            params['ids'] = True 
+            params['ids'] = True
         r = check_response(
             requests.get(
                 endpoint_url(host, objects_endpoint),
@@ -356,7 +456,7 @@ class Token:
         full=False
     ):
         '''Create an access Token'''
-        
+
         params = dict()
         params['full'] = full
 
@@ -384,7 +484,7 @@ class Token:
         params = dict()
         params['full'] = full
 
-        auth_json = dict() 
+        auth_json = dict()
         auth_json['token'] = get_token_value(token)
 
         r = check_response(
@@ -403,7 +503,7 @@ class Token:
     ):
         '''Delete an access Token'''
 
-        auth_json = dict() 
+        auth_json = dict()
         auth_json['token'] = get_token_value(token)
 
         r = check_response(
